@@ -2,25 +2,24 @@
 
 import rclpy
 from rclpy.node import Node
+from geometry_msgs.msg import Twist
 from servo_controller_msgs.msg import ServosPosition, ServoPosition
-from servo_controller_msgs.msg import ServoStateList
 import time
 
-class ArmController(Node):
+class ArmAndMovementNode(Node):
     """
-    A ROS2 node for controlling robotic arm movements.
-    This class provides methods to control individual joints and multiple joints simultaneously.
-    Input: Commands to move specific joints to desired positions
-    Output: Publishes servo position commands to the servo controller topic
+    A ROS2 node that combines arm movement with robot movement.
+    This class provides methods to control both the robotic arm and the robot's base movement.
+    Input: Commands to move the arm and robot base
+    Output: Publishes commands to both servo controller and cmd_vel topics
     """
     
     def __init__(self):
-        """
-        Initialize the arm controller node and create necessary publishers
-        """
-        super().__init__('arm_controller')
-        self.publisher_ = self.create_publisher(ServosPosition, 'servo_controller', 10)
-        self.get_logger().info('Arm controller node initialized')
+        super().__init__('arm_and_movement')
+        
+        # Create publishers for both arm and movement
+        self.arm_publisher = self.create_publisher(ServosPosition, 'servo_controller', 10)
+        self.movement_publisher = self.create_publisher(Twist, '/cmd_vel', 10)
         
         # Define home position for all joints
         self.home_position = {
@@ -31,50 +30,15 @@ class ArmController(Node):
             5: 500,  # Wrist rotation
             6: 500   # Gripper
         }
-
-        # Define positions
-        self.fold_position = {
-            1: 500,  # Base rotation
-            2: 250,  # Shoulder down
-            3: 300,  # Elbow in
-            4: 300,  # Wrist curled
-            5: 500,  # Wrist rotation
-            6: 200   # Gripper closed
-        }
-        self.raised_position = {1: 500, 2: 700, 3: 700, 4: 500, 5: 500, 6: 500} # Example: arm up
-
-    def move_arm_joint(self, joint_id: int, move_pulse: int, duration: float = 1.0):
-        """
-        Move a specific joint to a desired position
         
-        Args:
-            joint_id (int): The ID of the joint to move (1-based indexing)
-            move_pulse (int): The target position in pulse units
-            duration (float): Time in seconds for the movement to complete
-        """
-        if not isinstance(joint_id, int) or joint_id < 1:
-            self.get_logger().error(f'Invalid joint ID: {joint_id}')
-            return
-            
-        msg = ServosPosition()
-        msg.position_unit = 'pulse'
-        msg.duration = duration
-        
-        servo = ServoPosition()
-        servo.id = joint_id
-        servo.position = float(move_pulse)
-        
-        msg.position.append(servo)
-        self.publisher_.publish(msg)
-        self.get_logger().info(f"Sent command: Joint {servo.id} to position {servo.position} with duration {msg.duration} seconds")
+        self.get_logger().info('Arm and Movement node initialized')
 
-    def move_multiple_joints(self, joint_positions: dict, duration: float = 1.0):
+    def move_arm(self, joint_positions: dict, duration: float = 1.0):
         """
-        Move multiple joints simultaneously to their target positions
+        Move multiple arm joints simultaneously
         
         Args:
             joint_positions (dict): Dictionary mapping joint IDs to their target positions
-                                  e.g., {1: 500, 2: 700, 3: 300}
             duration (float): Time in seconds for the movement to complete
         """
         msg = ServosPosition()
@@ -82,150 +46,145 @@ class ArmController(Node):
         msg.duration = duration
         
         for joint_id, position in joint_positions.items():
-            if not isinstance(joint_id, int) or joint_id < 1:
-                self.get_logger().error(f'Invalid joint ID: {joint_id}')
-                continue
-                
             servo = ServoPosition()
             servo.id = joint_id
             servo.position = float(position)
             msg.position.append(servo)
             
-        self.publisher_.publish(msg)
-        self.get_logger().info(f"Sent command: Moving {len(joint_positions)} joints simultaneously")
+        self.arm_publisher.publish(msg)
+        self.get_logger().info(f"Moving arm joints: {joint_positions}")
 
-    def return_to_home(self, duration: float = 1.0):
+    def move_robot(self, linear_speed: float, angular_speed: float, duration: float):
         """
-        Return all joints to their home position
+        Move the robot base
         
         Args:
-            duration (float): Time in seconds for the movement to complete
+            linear_speed (float): Forward/backward speed in m/s
+            angular_speed (float): Rotational speed in rad/s
+            duration (float): Time to move in seconds
         """
-        self.move_multiple_joints(self.home_position, duration)
-        self.get_logger().info("Returning to home position")
+        twist = Twist()
+        twist.linear.x = linear_speed
+        twist.angular.z = angular_speed
+        
+        end_time = time.time() + duration
+        while time.time() < end_time and rclpy.ok():
+            self.movement_publisher.publish(twist)
+            time.sleep(0.1)
+        
+        # Stop the robot
+        twist.linear.x = 0.0
+        twist.angular.z = 0.0
+        self.movement_publisher.publish(twist)
+        self.get_logger().info(f"Robot movement complete: linear={linear_speed}, angular={angular_speed}")
 
-    def move_to_fold(self, duration: float = 1.0):
-        """Move all joints to the folded position."""
-        self.move_multiple_joints(self.fold_position, duration)
-        self.get_logger().info("Moving to fold position")
+    def perform_combined_movement(self):
+        """
+        Perform a complex sequence of combined arm and robot movements
+        """
+        try:
+            # 1. Start with arm in home position
+            self.get_logger().info("Moving arm to home position")
+            self.move_arm(self.home_position)
+            time.sleep(2.0)
 
-    def move_to_raised(self, duration: float = 1.0):
-        """Move all joints to the raised position."""
-        self.move_multiple_joints(self.raised_position, duration)
-        self.get_logger().info("Raising arm up")
+            # 2. Complex forward movement with arm wave
+            self.get_logger().info("Complex forward movement with arm wave")
+            for i in range(3):
+                # Move forward with varying speeds
+                self.move_robot(0.3, 0.0, 1.0)  # Faster forward
+                self.move_arm({2: 700, 3: 600, 4: 400})  # Raise and curl
+                time.sleep(0.5)
+                
+                self.move_robot(0.1, 0.0, 1.0)  # Slower forward
+                self.move_arm({2: 300, 3: 400, 4: 600})  # Lower and extend
+                time.sleep(0.5)
 
-    # Convenience methods for individual joints
-    def move_arm_joint1(self, move_pulse: int = 500):
-        """Move joint 1 to a specific position"""
-        self.move_arm_joint(1, move_pulse)
+            # 3. Large circle movement with dynamic arm positions
+            self.get_logger().info("Large circle movement with dynamic arm positions")
+            # First quarter circle
+            self.move_robot(0.3, 0.4, 3.0)  # Larger circle, faster movement
+            self.move_arm({1: 600, 2: 700, 3: 500, 4: 400, 5: 600})  # Complex arm position
+            time.sleep(1.0)
+            
+            # Second quarter circle
+            self.move_robot(0.3, 0.4, 3.0)
+            self.move_arm({1: 400, 2: 300, 3: 700, 4: 600, 5: 400})  # Different arm position
+            time.sleep(1.0)
+            
+            # Third quarter circle
+            self.move_robot(0.3, 0.4, 3.0)
+            self.move_arm({1: 700, 2: 500, 3: 300, 4: 700, 5: 500})  # Another arm position
+            time.sleep(1.0)
+            
+            # Fourth quarter circle
+            self.move_robot(0.3, 0.4, 3.0)
+            self.move_arm({1: 300, 2: 600, 3: 600, 4: 300, 5: 700})  # Final arm position
+            time.sleep(1.0)
 
-    def move_arm_joint2(self, move_pulse: int = 500):
-        """Move joint 2 to a specific position"""
-        self.move_arm_joint(2, move_pulse)
+            # 4. Zigzag movement with arm dance
+            self.get_logger().info("Zigzag movement with arm dance")
+            for _ in range(4):
+                # Zig right
+                self.move_robot(0.2, 0.3, 1.5)
+                self.move_arm({1: 600, 2: 700, 3: 300, 4: 500, 5: 600})
+                time.sleep(0.5)
+                
+                # Zag left
+                self.move_robot(0.2, -0.3, 1.5)
+                self.move_arm({1: 400, 2: 300, 3: 700, 4: 500, 5: 400})
+                time.sleep(0.5)
 
-    def move_arm_joint3(self, move_pulse: int = 500):
-        """Move joint 3 to a specific position"""
-        self.move_arm_joint(3, move_pulse)
+            # 5. Spiral movement with continuous arm motion
+            self.get_logger().info("Spiral movement with continuous arm motion")
+            for i in range(8):
+                # Gradually increase angular speed for spiral effect
+                angular_speed = 0.2 + (i * 0.1)
+                self.move_robot(0.2, angular_speed, 1.0)
+                
+                # Continuous arm motion
+                arm_positions = [
+                    {1: 600, 2: 700, 3: 500, 4: 400, 5: 600},
+                    {1: 400, 2: 300, 3: 700, 4: 600, 5: 400},
+                    {1: 700, 2: 500, 3: 300, 4: 700, 5: 500},
+                    {1: 300, 2: 600, 3: 600, 4: 300, 5: 700}
+                ]
+                self.move_arm(arm_positions[i % 4])
+                time.sleep(0.5)
 
-    def move_arm_joint4(self, move_pulse: int = 500):
-        """Move joint 4 to a specific position"""
-        self.move_arm_joint(4, move_pulse)
+            # 6. Final flourish - quick movements in all directions
+            self.get_logger().info("Final flourish")
+            movements = [
+                (0.3, 0.0, 1.0, {1: 700, 2: 700, 3: 700}),  # Forward
+                (-0.3, 0.0, 1.0, {1: 300, 2: 300, 3: 300}),  # Backward
+                (0.0, 0.5, 1.0, {1: 600, 2: 500, 3: 600}),  # Rotate right
+                (0.0, -0.5, 1.0, {1: 400, 2: 500, 3: 400})  # Rotate left
+            ]
+            
+            for linear, angular, duration, arm_pos in movements:
+                self.move_robot(linear, angular, duration)
+                self.move_arm(arm_pos)
+                time.sleep(0.5)
 
-    def move_arm_joint5(self, move_pulse: int = 500):
-        """Move joint 5 to a specific position"""
-        self.move_arm_joint(5, move_pulse)
+            # 7. Return to home position
+            self.get_logger().info("Returning to home position")
+            self.move_arm(self.home_position)
+            time.sleep(2.0)
 
-    def move_arm_joint6(self, move_pulse: int = 500):
-        """Move joint 6 to a specific position"""
-        self.move_arm_joint(6, move_pulse)
+        except KeyboardInterrupt:
+            self.get_logger().info("Movement interrupted by user")
+            # Ensure we return to home position
+            self.move_arm(self.home_position)
+            self.move_robot(0.0, 0.0, 0.1)  # Stop robot
 
 def main(args=None):
-    """
-    Main function to run the arm controller node with a pattern movement sequence
-    """
     rclpy.init(args=args)
-    node = ArmController()
-    
-    # Wait for publisher to be ready
-    time.sleep(1.0)
+    node = ArmAndMovementNode()
     
     try:
-        # 1. Fold first
-        node.get_logger().info("Folding arm...")
-        node.move_to_fold()
-        time.sleep(2.0)
-
-        # 2. Raise up
-        node.get_logger().info("Raising arm up...")
-        node.move_to_raised()
-        time.sleep(2.0)
-
-        # 3. Do the dance patterns (wave, circle, wrist rotation)
-        # Start from home position
-        node.get_logger().info("Starting from home position...")
-        node.return_to_home()
-        time.sleep(2.0)
-
-        # Pattern 1: Wave motion
-        node.get_logger().info("Pattern 1: Wave motion...")
-        for _ in range(3):
-            # Move up
-            node.move_multiple_joints({
-                1: 600,  # Base rotate
-                2: 700,  # Shoulder up
-                3: 600   # Elbow up
-            })
-            time.sleep(1.5)
-            
-            # Move down
-            node.move_multiple_joints({
-                1: 400,  # Base rotate
-                2: 300,  # Shoulder down
-                3: 400   # Elbow down
-            })
-            time.sleep(1.5)
-
-        # Pattern 2: Circular motion
-        node.get_logger().info("Pattern 2: Circular motion...")
-        positions = [
-            (600, 500, 500),  # Right
-            (500, 600, 500),  # Up
-            (400, 500, 500),  # Left
-            (500, 400, 500),  # Down
-        ]
-        
-        for pos in positions:
-            node.move_multiple_joints({
-                1: pos[0],  # Base
-                2: pos[1],  # Shoulder
-                3: pos[2]   # Elbow
-            })
-            time.sleep(1.5)
-
-        # Pattern 3: Wrist rotation
-        node.get_logger().info("Pattern 3: Wrist rotation...")
-        for _ in range(2):
-            node.move_multiple_joints({
-                4: 700,  # Wrist up
-                5: 700   # Wrist rotate
-            })
-            time.sleep(1.0)
-            
-            node.move_multiple_joints({
-                4: 300,  # Wrist down
-                5: 300   # Wrist rotate
-            })
-            time.sleep(1.0)
-
-        # 4. Return to fold
-        node.get_logger().info("Returning to fold position...")
-        node.move_to_fold()
-        time.sleep(2.0)
-        
-    except KeyboardInterrupt:
-        print("Movement interrupted by user")
-        # Ensure we return to home position even if interrupted
-        node.move_to_fold()
+        node.perform_combined_movement()
+    except Exception as e:
+        node.get_logger().error(f'Error during movement: {str(e)}')
     finally:
         node.destroy_node()
         rclpy.shutdown()
