@@ -1,0 +1,5 @@
+[console_scripts]
+test_arm = my_robot.test_arm_movement:main
+test_arm_action = my_robot.test_arm_action:main
+test_arm_rad = my_robot.test_arm_action_rad:main
+test_arm_raw = my_robot.test_arm_action_raw:main

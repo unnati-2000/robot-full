@@ -1,0 +1,38 @@
+[5.247s] Invoking command in '/home/ubuntu/ros2_sep/src/my_robot': PYTHONPATH=/home/ubuntu/ros2_sep/build/my_robot/prefix_override:/home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/my_robot build --build-base /home/ubuntu/ros2_sep/build/my_robot/build install --record /home/ubuntu/ros2_sep/build/my_robot/install.log --single-version-externally-managed install_data
+[6.311s] running egg_info
+[6.365s] writing ../../build/my_robot/my_robot.egg-info/PKG-INFO
+[6.367s] writing dependency_links to ../../build/my_robot/my_robot.egg-info/dependency_links.txt
+[6.367s] writing entry points to ../../build/my_robot/my_robot.egg-info/entry_points.txt
+[6.368s] writing requirements to ../../build/my_robot/my_robot.egg-info/requires.txt
+[6.368s] writing top-level names to ../../build/my_robot/my_robot.egg-info/top_level.txt
+[6.478s] reading manifest file '../../build/my_robot/my_robot.egg-info/SOURCES.txt'
+[6.481s] writing manifest file '../../build/my_robot/my_robot.egg-info/SOURCES.txt'
+[6.482s] running build
+[6.485s] running build_py
+[6.494s] copying my_robot/test_arm_action_raw.py -> /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot
+[6.495s] copying my_robot/ROS2moveforward.py -> /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot
+[6.495s] copying my_robot/test_arm_action.py -> /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot
+[6.498s] copying my_robot/test_arm_action_rad.py -> /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot
+[6.498s] copying my_robot/__init__.py -> /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot
+[6.498s] copying my_robot/test_direct_servo.py -> /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot
+[6.499s] copying my_robot/test_arm_movement.py -> /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot
+[6.502s] running install
+[6.525s] running install_lib
+[6.664s] copying /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot/test_arm_action_rad.py -> /home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages/my_robot
+[6.667s] copying /home/ubuntu/ros2_sep/build/my_robot/build/lib/my_robot/test_direct_servo.py -> /home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages/my_robot
+[6.671s] byte-compiling /home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages/my_robot/test_arm_action_rad.py to test_arm_action_rad.cpython-310.pyc
+[6.681s] byte-compiling /home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages/my_robot/test_direct_servo.py to test_direct_servo.cpython-310.pyc
+[6.681s] running install_data
+[6.682s] copying resource/my_robot -> /home/ubuntu/ros2_sep/install/my_robot/share/ament_index/resource_index/packages
+[6.683s] copying package.xml -> /home/ubuntu/ros2_sep/install/my_robot/share/my_robot
+[6.683s] running install_egg_info
+[6.790s] removing '/home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages/my_robot-0.0.0-py3.10.egg-info' (and everything under it)
+[6.792s] Copying ../../build/my_robot/my_robot.egg-info to /home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages/my_robot-0.0.0-py3.10.egg-info
+[6.795s] running install_scripts
+[7.542s] Installing test_arm script to /home/ubuntu/ros2_sep/install/my_robot/lib/my_robot
+[7.547s] Installing test_arm_action script to /home/ubuntu/ros2_sep/install/my_robot/lib/my_robot
+[7.551s] Installing test_arm_rad script to /home/ubuntu/ros2_sep/install/my_robot/lib/my_robot
+[7.552s] Installing test_arm_raw script to /home/ubuntu/ros2_sep/install/my_robot/lib/my_robot
+[7.553s] Installing test_direct_servo script to /home/ubuntu/ros2_sep/install/my_robot/lib/my_robot
+[7.556s] writing list of installed files to '/home/ubuntu/ros2_sep/build/my_robot/install.log'
+[7.824s] Invoked command in '/home/ubuntu/ros2_sep/src/my_robot' returned '0': PYTHONPATH=/home/ubuntu/ros2_sep/build/my_robot/prefix_override:/home/ubuntu/ros2_sep/install/my_robot/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../../build/my_robot build --build-base /home/ubuntu/ros2_sep/build/my_robot/build install --record /home/ubuntu/ros2_sep/build/my_robot/install.log --single-version-externally-managed install_data
