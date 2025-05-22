@@ -27,6 +27,7 @@ setup(
             'test_arm_rad = my_robot.test_arm_action_rad:main',
             'test_direct_servo = my_robot.test_direct_servo:main',
             'arm_controller = my_robot.arm_controller:main',
+            'arm_and_movement = my_robot.arm_and_movement:main',
         ],
     },
 )
