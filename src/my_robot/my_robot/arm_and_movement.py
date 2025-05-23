@@ -80,58 +80,104 @@ class ArmAndMovementNode(Node):
 
     def perform_combined_movement(self):
         """
-        Perform a sequence of combined arm and robot movements in a snake-like dance pattern.
-        Moves each joint sequentially while the robot moves forward and backward.
+        Perform a 3-minute dance sequence with various patterns including snake-like movements,
+        wave patterns, and synchronized arm-robot movements.
         """
         try:
+            start_time = time.time()
+            dance_duration = 180  # 3 minutes in seconds
+            
             # 1. Start with arm in home position
-            self.get_logger().info("Moving arm to home position")
+            self.get_logger().info("Starting dance sequence - Moving to home position")
             self.move_arm(self.home_position)
             time.sleep(2.0)
 
-            # 2. Move forward while doing sequential joint movements
-            self.get_logger().info("Moving forward with sequential joint movements")
-            self.move_robot(0.2, 0.0, 1.5)  # Move forward for 1.5 seconds
-            
-            # Sequential joint movements while moving forward
-            self.move_arm({1: 700})  # Base joint
-            time.sleep(0.5)
-            self.move_arm({2: 700})  # Shoulder joint
-            time.sleep(0.5)
-            self.move_arm({3: 700})  # Elbow joint
-            time.sleep(0.5)
-            self.move_arm({4: 700})  # Wrist joint
-            time.sleep(0.5)
-            self.move_arm({5: 700})  # Wrist rotation
-            time.sleep(0.5)
-            self.move_arm({6: 700})  # Gripper
-            time.sleep(0.5)
+            while time.time() - start_time < dance_duration:
+                # Randomly select a dance pattern
+                pattern = (int(time.time()) % 5)  # Cycle through 5 patterns
+                
+                if pattern == 0:
+                    # Snake-like sequential movement
+                    self.get_logger().info("Performing snake-like sequential movement")
+                    self.move_robot(0.2, 0.0, 1.5)
+                    for joint in range(1, 7):
+                        self.move_arm({joint: 700})
+                        time.sleep(0.3)
+                    
+                    self.move_robot(-0.2, 0.0, 1.5)
+                    for joint in range(6, 0, -1):
+                        self.move_arm({joint: 300})
+                        time.sleep(0.3)
 
-            # 3. Move backward while reversing the joint movements
-            self.get_logger().info("Moving backward with reverse sequential joint movements")
-            self.move_robot(-0.2, 0.0, 1.5)  # Move backward for 1.5 seconds
-            
-            # Reverse sequential joint movements while moving backward
-            self.move_arm({6: 300})  # Gripper
-            time.sleep(0.5)
-            self.move_arm({5: 300})  # Wrist rotation
-            time.sleep(0.5)
-            self.move_arm({4: 300})  # Wrist joint
-            time.sleep(0.5)
-            self.move_arm({3: 300})  # Elbow joint
-            time.sleep(0.5)
-            self.move_arm({2: 300})  # Shoulder joint
-            time.sleep(0.5)
-            self.move_arm({1: 300})  # Base joint
-            time.sleep(0.5)
+                elif pattern == 1:
+                    # Wave pattern
+                    self.get_logger().info("Performing wave pattern")
+                    for _ in range(3):
+                        self.move_robot(0.15, 0.1, 1.0)
+                        self.move_arm({2: 700, 3: 600, 4: 500})
+                        time.sleep(0.5)
+                        self.move_arm({2: 300, 3: 400, 4: 700})
+                        time.sleep(0.5)
+                    
+                    for _ in range(3):
+                        self.move_robot(0.15, -0.1, 1.0)
+                        self.move_arm({2: 700, 3: 600, 4: 500})
+                        time.sleep(0.5)
+                        self.move_arm({2: 300, 3: 400, 4: 700})
+                        time.sleep(0.5)
 
-            # 4. Return to home position
-            self.get_logger().info("Returning to home position")
+                elif pattern == 2:
+                    # Spiral dance
+                    self.get_logger().info("Performing spiral dance")
+                    for i in range(4):
+                        angular_speed = 0.2 + (i * 0.1)
+                        self.move_robot(0.15, angular_speed, 2.0)
+                        for joint in range(1, 7):
+                            self.move_arm({joint: 500 + (100 if i % 2 == 0 else -100)})
+                            time.sleep(0.2)
+
+                elif pattern == 3:
+                    # Zigzag with arm wave
+                    self.get_logger().info("Performing zigzag with arm wave")
+                    for _ in range(4):
+                        self.move_robot(0.2, 0.3, 1.0)
+                        self.move_arm({1: 600, 2: 700, 3: 400})
+                        time.sleep(0.5)
+                        
+                        self.move_robot(0.2, -0.3, 1.0)
+                        self.move_arm({1: 400, 2: 300, 3: 600})
+                        time.sleep(0.5)
+
+                elif pattern == 4:
+                    # Circular wave
+                    self.get_logger().info("Performing circular wave")
+                    for _ in range(2):
+                        self.move_robot(0.15, 0.4, 2.0)
+                        for joint in range(1, 7):
+                            self.move_arm({joint: 700})
+                            time.sleep(0.2)
+                        
+                        self.move_robot(0.15, -0.4, 2.0)
+                        for joint in range(6, 0, -1):
+                            self.move_arm({joint: 300})
+                            time.sleep(0.2)
+
+                # Brief pause between patterns
+                time.sleep(1.0)
+                
+                # Return to home position periodically
+                if int(time.time() - start_time) % 30 == 0:  # Every 30 seconds
+                    self.get_logger().info("Returning to home position")
+                    self.move_arm(self.home_position)
+                    time.sleep(2.0)
+
+            # Final return to home position
+            self.get_logger().info("Dance sequence complete - Returning to home position")
             self.move_arm(self.home_position)
             time.sleep(2.0)
 
         except KeyboardInterrupt:
-            self.get_logger().info("Movement interrupted by user")
+            self.get_logger().info("Dance interrupted by user")
             # Ensure we return to home position
             self.move_arm(self.home_position)
             self.move_robot(0.0, 0.0, 0.1)  # Stop robot
