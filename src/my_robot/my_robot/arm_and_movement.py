@@ -80,7 +80,8 @@ class ArmAndMovementNode(Node):
 
     def perform_combined_movement(self):
         """
-        Perform a sequence of combined arm and robot movements
+        Perform a sequence of combined arm and robot movements in a snake-like dance pattern.
+        Moves each joint sequentially while the robot moves forward and backward.
         """
         try:
             # 1. Start with arm in home position
@@ -88,28 +89,43 @@ class ArmAndMovementNode(Node):
             self.move_arm(self.home_position)
             time.sleep(2.0)
 
-            # 2. Move forward while raising arm
-            self.get_logger().info("Moving forward while raising arm")
-            self.move_robot(0.2, 0.0, 2.0)  # Move forward
-            self.move_arm({2: 700, 3: 700})  # Raise arm
-            time.sleep(2.0)
+            # 2. Move forward while doing sequential joint movements
+            self.get_logger().info("Moving forward with sequential joint movements")
+            self.move_robot(0.2, 0.0, 1.5)  # Move forward for 1.5 seconds
+            
+            # Sequential joint movements while moving forward
+            self.move_arm({1: 700})  # Base joint
+            time.sleep(0.5)
+            self.move_arm({2: 700})  # Shoulder joint
+            time.sleep(0.5)
+            self.move_arm({3: 700})  # Elbow joint
+            time.sleep(0.5)
+            self.move_arm({4: 700})  # Wrist joint
+            time.sleep(0.5)
+            self.move_arm({5: 700})  # Wrist rotation
+            time.sleep(0.5)
+            self.move_arm({6: 700})  # Gripper
+            time.sleep(0.5)
 
-            # 3. Move backward while lowering arm
-            self.get_logger().info("Moving backward while lowering arm")
-            self.move_robot(-0.2, 0.0, 2.0)  # Move backward
-            self.move_arm({2: 300, 3: 300})  # Lower arm
-            time.sleep(2.0)
+            # 3. Move backward while reversing the joint movements
+            self.get_logger().info("Moving backward with reverse sequential joint movements")
+            self.move_robot(-0.2, 0.0, 1.5)  # Move backward for 1.5 seconds
+            
+            # Reverse sequential joint movements while moving backward
+            self.move_arm({6: 300})  # Gripper
+            time.sleep(0.5)
+            self.move_arm({5: 300})  # Wrist rotation
+            time.sleep(0.5)
+            self.move_arm({4: 300})  # Wrist joint
+            time.sleep(0.5)
+            self.move_arm({3: 300})  # Elbow joint
+            time.sleep(0.5)
+            self.move_arm({2: 300})  # Shoulder joint
+            time.sleep(0.5)
+            self.move_arm({1: 300})  # Base joint
+            time.sleep(0.5)
 
-            # 4. Move in circle while waving arm
-            self.get_logger().info("Moving in circle while waving arm")
-            self.move_robot(0.2, 0.5, 4.0)  # Move in circle
-            for _ in range(2):
-                self.move_arm({2: 700, 3: 600})  # Wave up
-                time.sleep(1.0)
-                self.move_arm({2: 300, 3: 400})  # Wave down
-                time.sleep(1.0)
-
-            # 5. Return to home position
+            # 4. Return to home position
             self.get_logger().info("Returning to home position")
             self.move_arm(self.home_position)
             time.sleep(2.0)
