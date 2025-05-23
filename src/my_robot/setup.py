@@ -28,6 +28,7 @@ setup(
             'test_direct_servo = my_robot.test_direct_servo:main',
             'arm_controller = my_robot.arm_controller:main',
             'arm_and_movement = my_robot.arm_and_movement:main',
+            'camera_node = my_robot.camera_node:main',
         ],
     },
 )
