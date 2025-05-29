@@ -10,9 +10,16 @@ from cv_bridge import CvBridge
 import numpy as np
 import argparse
 import select
+import tensorflow as tf
+import tensorflow_hub as hub
 
 
 class CameraNode(Node):
+    """
+    A ROS2 node that captures images from a camera and performs bird detection using TensorFlow.
+    Input: Camera feed from /depth_cam/rgb/image_raw topic
+    Output: Displays camera feed with bird detection annotations
+    """
     def __init__(self, save_path='/home/ubuntu/captured_images', max_images=150):
         super().__init__('camera_node')
         # Subscribe to the RGB camera topic
@@ -28,8 +35,53 @@ class CameraNode(Node):
         self.max_images = max_images
         self.save_id = 0
         self.latest_image = None
+        
+        # Load the TensorFlow model
+        self.get_logger().info('Loading TensorFlow model...')
+        self.model = hub.load('https://tfhub.dev/google/faster_rcnn/openimages_v4/inception_resnet_v2/1')
+        self.get_logger().info('Model loaded successfully')
+        
+        # Define bird-related classes (from COCO dataset)
+        self.bird_classes = ['bird', 'chicken', 'duck', 'eagle', 'owl', 'parrot', 'penguin']
+        
         self.get_logger().info(f'Camera node initialized. Will save up to {max_images} images to: {save_path}')
         self.get_logger().info('Press Enter to capture an image. Press Ctrl+C to exit.')
+        
+    def detect_birds(self, image):
+        """
+        Detect birds in the given image using the TensorFlow model.
+        Input: OpenCV image in BGR format
+        Output: List of detected birds with their bounding boxes and confidence scores
+        """
+        # Convert image to RGB and resize for the model
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_resized = cv2.resize(image_rgb, (640, 480))
+        
+        # Convert to tensor and add batch dimension
+        image_tensor = tf.convert_to_tensor(image_resized)
+        image_tensor = tf.expand_dims(image_tensor, 0)
+        
+        # Run detection
+        results = self.model(image_tensor)
+        
+        # Process results
+        detections = []
+        boxes = results['detection_boxes'][0].numpy()
+        scores = results['detection_scores'][0].numpy()
+        classes = results['detection_class_entities'][0].numpy()
+        
+        for box, score, class_name in zip(boxes, scores, classes):
+            class_name = class_name.decode('utf-8').lower()
+            if class_name in self.bird_classes and score > 0.5:
+                ymin, xmin, ymax, xmax = box
+                detections.append({
+                    'class': class_name,
+                    'score': float(score),
+                    'box': (int(xmin * 640), int(ymin * 480), 
+                           int(xmax * 640), int(ymax * 480))
+                })
+        
+        return detections
         
     def image_callback(self, msg):
         try:
@@ -40,8 +92,19 @@ class CameraNode(Node):
             # Store the latest image
             self.latest_image = image_bgr
             
+            # Detect birds
+            detections = self.detect_birds(image_bgr)
+            
+            # Draw detections on the image
+            for det in detections:
+                xmin, ymin, xmax, ymax = det['box']
+                cv2.rectangle(image_rgb, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+                label = f"{det['class']}: {det['score']:.2f}"
+                cv2.putText(image_rgb, label, (xmin, ymin-10), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            
             # Display the image
-            cv2.imshow("Camera Feed", image_rgb)
+            cv2.imshow("Camera Feed with Bird Detection", image_rgb)
             cv2.waitKey(1)
             
         except Exception as e:
